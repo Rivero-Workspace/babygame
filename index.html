@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>🌈 Baby Play</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#FFF0E6;font-family:'Comic Sans MS','Chalkboard SE',cursive;touch-action:none;user-select:none;}
+#scene{position:fixed;inset:0;overflow:hidden;}
+#bg{position:absolute;inset:0;}
+#loader{position:fixed;inset:0;background:linear-gradient(135deg,#FFD6E0,#D6F0FF);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.8s;}
+#loader h1{font-size:clamp(26px,7vw,54px);margin-bottom:24px;text-align:center;}
+#progress-bar{width:72vw;max-width:340px;height:22px;background:rgba(255,255,255,0.5);border-radius:20px;overflow:hidden;border:3px solid rgba(255,255,255,0.8);}
+#progress-fill{height:100%;background:linear-gradient(90deg,#FF6B6B,#FF9F43,#FECA57);width:0%;transition:width 0.3s;border-radius:20px;}
+#load-status{margin-top:14px;font-size:16px;color:#555;text-align:center;max-width:80vw;min-height:24px;}
+#load-skip{margin-top:22px;padding:10px 28px;background:rgba(255,255,255,0.6);border:2px solid rgba(255,255,255,0.8);border-radius:30px;font-size:16px;cursor:pointer;font-family:inherit;color:#666;}
+.idle-obj{position:absolute;cursor:pointer;font-size:clamp(52px,11vw,92px);filter:drop-shadow(0 6px 8px rgba(0,0,0,0.15));will-change:left,top;animation:wiggle var(--wdur,1.2s) ease-in-out infinite;animation-delay:var(--wdel,0s);}
+.idle-obj.frozen{animation:none!important;filter:drop-shadow(0 8px 24px rgba(255,200,0,0.9)) drop-shadow(0 0 16px rgba(255,140,0,0.7))!important;transform:scale(1.3)!important;}
+@keyframes wiggle{0%,100%{transform:rotate(-5deg) scale(1);}50%{transform:rotate(5deg) scale(1.08);}}
+.bounce-pop{animation:bigBounce 0.45s cubic-bezier(.36,.07,.19,.97)!important;}
+@keyframes bigBounce{0%,100%{transform:scale(1) rotate(0deg);}20%{transform:scale(1.5) rotate(-12deg);}40%{transform:scale(0.75) rotate(12deg);}65%{transform:scale(1.3) rotate(-6deg);}85%{transform:scale(0.95) rotate(3deg);}}
+.star-particle{position:absolute;pointer-events:none;font-size:clamp(22px,5vw,44px);animation:starBurst 1s ease-out forwards;}
+@keyframes starBurst{0%{transform:translate(-50%,-50%) scale(0) rotate(0deg);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) scale(1.2) rotate(360deg);opacity:0;}}
+.circ{position:absolute;border-radius:50%;pointer-events:none;}
+.trail-dot{position:absolute;border-radius:50%;pointer-events:none;animation:trailFade 0.8s ease-out forwards;}
+@keyframes trailFade{0%{transform:translate(-50%,-50%) scale(1);opacity:0.9;}100%{transform:translate(-50%,-50%) scale(0);opacity:0;}}
+.bubble{position:absolute;border-radius:50%;pointer-events:none;border:3px solid rgba(255,255,255,0.7);animation:bubbleRise var(--dur) ease-in forwards;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,0.8),var(--bcolor));}
+@keyframes bubbleRise{0%{transform:translateX(0) scale(0.3);opacity:1;}50%{opacity:0.9;}100%{transform:translateX(var(--wobble)) translateY(-110vh) scale(1);opacity:0;}}
+.confetti{position:absolute;pointer-events:none;animation:confettiFall var(--dur) ease-in forwards;border-radius:3px;}
+@keyframes confettiFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+#surprise-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);font-size:clamp(60px,18vw,140px);text-align:center;pointer-events:none;z-index:100;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.2));animation:none;}
+.surprise-pop{animation:surprisePop 1.5s cubic-bezier(.36,.07,.19,.97) forwards!important;}
+@keyframes surprisePop{0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg);opacity:0;}30%{transform:translate(-50%,-50%) scale(1.3) rotate(10deg);opacity:1;}60%{transform:translate(-50%,-50%) scale(1) rotate(-5deg);opacity:1;}85%{transform:translate(-50%,-50%) scale(1.05) rotate(2deg);opacity:1;}100%{transform:translate(-50%,-50%) scale(0) rotate(20deg);opacity:0;}}
+#night-overlay{position:fixed;inset:0;background:rgba(60,20,80,0);pointer-events:none;transition:background 2s;z-index:50;}
+body.night #night-overlay{background:rgba(60,20,80,0.45);}
+#night-btn{position:fixed;bottom:20px;right:20px;font-size:36px;z-index:200;background:rgba(255,255,255,0.4);border-radius:50%;width:64px;height:64px;display:flex;align-items:center;justify-content:center;border:3px solid rgba(255,255,255,0.6);cursor:pointer;backdrop-filter:blur(4px);}
+#exit-zone{position:fixed;top:0;left:0;width:80px;height:80px;z-index:300;opacity:0;}
+#exit-progress{position:fixed;top:10px;left:10px;width:60px;height:60px;border-radius:50%;background:conic-gradient(rgba(255,100,100,0.8) 0%,transparent 0%);display:none;z-index:301;border:3px solid rgba(255,100,100,0.5);}
+.parade-animal{position:absolute;font-size:clamp(56px,12vw,100px);pointer-events:auto;cursor:pointer;animation:paradeWalk var(--speed) linear forwards;top:var(--top);}
+@keyframes paradeWalk{0%{transform:translateX(110vw) scaleX(-1);opacity:0;}5%{opacity:1;}95%{opacity:1;}100%{transform:translateX(-30vw) scaleX(-1);opacity:0;}}
+.drum-ripple{position:absolute;border-radius:50%;border:4px solid var(--rcolor);pointer-events:none;animation:drumRipple 0.8s ease-out forwards;transform:translate(-50%,-50%);}
+@keyframes drumRipple{0%{width:20px;height:20px;opacity:1;}100%{width:180px;height:180px;opacity:0;}}
+.paint-streak{position:absolute;border-radius:50%;pointer-events:none;opacity:0.7;animation:paintFade 2s ease-out forwards;mix-blend-mode:multiply;}
+@keyframes paintFade{0%{opacity:0.8;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.5);}}
+#mode-label{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.5);border-radius:30px;padding:6px 20px;font-size:18px;font-weight:bold;color:#666;backdrop-filter:blur(4px);pointer-events:none;z-index:200;transition:opacity 1s;opacity:0.7;}
+</style>
+</head>
+<body>
+<div id="loader">
+  <h1>🦁 Loading Animal Sounds...</h1>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="load-status">Starting...</div>
+  <button id="load-skip">Skip → play with synth sound</button>
+</div>
+<div id="scene"><div id="bg"></div><div id="night-overlay"></div></div>
+<div id="surprise-text">🌟</div>
+<div id="exit-progress"></div>
+<div id="exit-zone"></div>
+<div id="night-btn">🌙</div>
+<div id="mode-label">✨ Tap anything!</div>
+<button id="mode-btn" onclick="setMode(curMode+1)" style="position:fixed;bottom:20px;right:90px;font-size:28px;z-index:200;background:rgba(255,255,255,0.4);border-radius:50%;width:58px;height:58px;border:3px solid rgba(255,255,255,0.6);cursor:pointer;backdrop-filter:blur(4px);">🔄</button>
+
+<script>
+// ============================================================
+//  REAL ANIMAL SOUNDS
+//  Source: Internet Archive — "Sound Ideas Animals and Birds"
+//  Public domain, CORS-open, verified filenames from archive.org
+// ============================================================
+const IA = 'https://archive.org/download/animals-and-birds-sound-effects/';
+
+// Each entry: [emoji, filename, display-name]
+const SOUND_DEF = [
+  ['🐘', '36%20Elephant%20Trumpeting.mp3',                     'Elephant'],
+  ['🦁', '08%20Lion%20Roar%2C%20Throaty.mp3',                  'Lion'],
+  ['🐮', '32%20Cow%20Single%20MOO%20X%206.mp3',                'Cow'],
+  ['🐷', '53%20Pig%20Squeals.mp3',                             'Pig'],
+  ['🐸', '37%20Frogs.mp3',                                     'Frog'],
+  ['🦆', '70%20Bird%2C%20Duck%20Quacks.mp3',                   'Duck'],
+  ['🐱', '01%20Cat%2C%20Meowing%2C%20Excited%20Tom%20Cat%2C%20Animal.mp3', 'Cat'],
+  ['🦊', '18%20Fox.mp3',                                       'Fox'],
+  ['🦓', '64%20Zebra%20Brays%2C%20Multiple.mp3',               'Zebra'],
+  ['🐼', '52%20Panda%20Barks%2C%20Growls%20Two%20Pandas.mp3',  'Panda'],
+  ['🦜', '84%20Bird%2C%20Parrot%20Squawks.mp3',                'Parrot'],
+  ['🐧', '88%20Bird%2C%20Penguin%2C%20Large%20Penguin%20Colony%20Indoor%20Ambience.mp3', 'Penguin'],
+  ['🐬', '34%20Dolphin%2C%20Bottlenose%20Clicks.mp3',          'Dolphin'],
+  ['🐥', '67%20Bird%2C%20Chicken%20Single%20Calls%20X%202.mp3','Chick'],
+  ['🦒', '39%20Giraffe.mp3',                                   'Giraffe'],
+  ['🐨', '23%20Bear%2C%20Grizzly%20Roar%2C%20Single.mp3',     'Koala/Bear'],
+];
+
+const ANIMAL_LIST = SOUND_DEF.map(d => d[0]);
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function resumeAC(){if(AC.state==='suspended')AC.resume();}
+const audioCache = {}; // emoji → AudioBuffer
+
+// ---- Synth fallback ----
+let NB=null;
+(()=>{const l=AC.sampleRate*0.6,b=AC.createBuffer(1,l,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<l;i++)d[i]=Math.random()*2-1;NB=b;})();
+function pN(f,q,d,v){if(!NB)return;const s=AC.createBufferSource();s.buffer=NB;s.loop=true;const fi=AC.createBiquadFilter();fi.type='bandpass';fi.frequency.value=f;fi.Q.value=q;const g=AC.createGain();g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);s.connect(fi);fi.connect(g);g.connect(AC.destination);s.start();s.stop(AC.currentTime+d);}
+function pO(t,f,d,v,fe){const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type=t;o.frequency.setValueAtTime(f,AC.currentTime);if(fe!==undefined)o.frequency.linearRampToValueAtTime(fe,AC.currentTime+d);g.gain.setValueAtTime(v,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+d);o.start();o.stop(AC.currentTime+d+0.05);}
+const SYNTH={'🐘':()=>{pO('sawtooth',80,0.9,0.45,480);pN(200,2,0.4,0.15);},'🦁':()=>{for(let i=0;i<5;i++)setTimeout(()=>{pN(85+Math.random()*30,1.5,0.18,0.35);},i*90);},'🐮':()=>{pO('sawtooth',145,0.95,0.4,128);},'🐷':()=>{pO('triangle',420,0.08,0.35,330);pN(600,5,0.08,0.2);},'🐸':()=>{[0,170].forEach(t=>setTimeout(()=>{pO('square',260,0.055,0.3);},t));},'🦆':()=>{pO('sawtooth',265,0.25,0.32,310);},'🐱':()=>{pO('sine',480,0.4,0.3,290);},'🦊':()=>{pO('triangle',380,0.12,0.4,720);},'🦓':()=>{pO('sawtooth',320,0.25,0.38,680);},'🐼':()=>{pO('sine',240,0.4,0.35,190);},'🦜':()=>{[900,1250,720].forEach((f,i)=>setTimeout(()=>pO('sawtooth',f,0.12,0.28,f*0.8),i*80));},'🐧':()=>{pO('sawtooth',650,0.15,0.3,500);},'🐬':()=>{pO('sine',3500,0.03,0.45);},'🐥':()=>{pO('sine',1450,0.09,0.32,1100);},'🦒':()=>{pO('sine',100,0.8,0.2,115);},'🐨':()=>{pN(120,2,0.5,0.2);}};
+
+function playSound(emoji){
+  resumeAC();
+  const buf=audioCache[emoji];
+  if(buf){
+    const src=AC.createBufferSource();
+    src.buffer=buf;
+    const g=AC.createGain();g.gain.value=0.85;
+    src.connect(g);g.connect(AC.destination);
+    src.start();
+  }else{
+    (SYNTH[emoji]||SYNTH['🐱'])();
+  }
+}
+
+// Scene FX sounds
+function pXylo(n){const ns=[523,587,659,698,784,880,988,1047];pO('triangle',ns[n%8],0.4,0.5);}
+function pBoing(){pO('sine',210,0.5,0.38,620);}
+function pPop(){pO('sine',820,0.15,0.42,400);}
+function pGiggle(){[0,80,160,240,320].forEach((t,i)=>setTimeout(()=>pO('sine',620+i*85,0.12,0.28),t));}
+const FX=[pBoing,pPop,()=>pXylo(Math.floor(Math.random()*8)),pGiggle];
+function playFX(){FX[Math.floor(Math.random()*FX.length)]();}
+
+// BG music
+let bgOn=false;
+const mel=[523,659,784,659,880,784,659,523,587,659,698,784,880,784,659,523];
+let mi=0;
+function bgNote(){const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='triangle';o.frequency.value=mel[mi++%mel.length];g.gain.setValueAtTime(0.06,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.55);o.start();o.stop(AC.currentTime+0.6);}
+function startBG(){if(bgOn)return;bgOn=true;setInterval(bgNote,600);}
+
+// ============================================================
+//  LOADER — fetch real audio from Internet Archive
+// ============================================================
+const fillEl=document.getElementById('progress-fill');
+const statusEl=document.getElementById('load-status');
+const loaderEl=document.getElementById('loader');
+document.getElementById('load-skip').addEventListener('click',()=>hideLoader());
+
+// CAVEMAN EXPLAIN:
+// OLD WAY: Load 1 file → wait → load next → wait → repeat (slow, 16x serial)
+// NEW WAY: Send all 16 requests at once (parallel), each has 8s timeout
+// If 1 file fails → use synth sound, game still works
+// CORS mode: explicit 'cors' so GitHub Pages → archive.org works
+
+async function fetchSound(emoji, file, name){
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 8000); // 8s max per file
+  try {
+    const res = await fetch(IA + file, {
+      mode: 'cors',
+      signal: ctrl.signal
+    });
+    clearTimeout(timer);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const ab = await res.arrayBuffer();
+    audioCache[emoji] = await AC.decodeAudioData(ab);
+    return {emoji, name, ok: true};
+  } catch(e) {
+    clearTimeout(timer);
+    console.warn('Sound failed:', name, e.message);
+    return {emoji, name, ok: false};
+  }
+}
+
+async function loadAll(){
+  statusEl.textContent = '⏳ Loading all sounds in parallel...';
+  
+  // Fire ALL requests at once (parallel, not sequential)
+  const promises = SOUND_DEF.map(([emoji, file, name]) => fetchSound(emoji, file, name));
+  
+  let done = 0;
+  // Update progress as each one finishes
+  const results = await Promise.allSettled(
+    promises.map(p => p.then(r => {
+      done++;
+      fillEl.style.width = (done / SOUND_DEF.length * 100) + '%';
+      const ok = r.ok;
+      statusEl.textContent = ok
+        ? r.emoji + ' ' + r.name + ' ✅'
+        : r.emoji + ' ' + r.name + ' 🎵 synth';
+      return r;
+    }))
+  );
+  
+  const loaded = results.filter(r => r.status === 'fulfilled' && r.value.ok).length;
+  statusEl.textContent = loaded === SOUND_DEF.length
+    ? '🎉 All sounds loaded! Tap the animals!'
+    : `✅ ${loaded}/${SOUND_DEF.length} real sounds loaded (rest = synth). Ready!`;
+  
+  await new Promise(r => setTimeout(r, 900));
+  hideLoader();
+}
+
+function hideLoader(){
+  loaderEl.style.opacity='0';
+  setTimeout(()=>{loaderEl.style.display='none';startGame();},800);
+}
+
+loadAll();
+
+// ============================================================
+//  UTILS
+// ============================================================
+const VIVID=['#FF6B6B','#FF9F43','#FECA57','#48DBFB','#1DD1A1','#FF9FF3','#54A0FF','#5F27CD'];
+const RAINBOW=['#FF0000','#FF7F00','#FFFF00','#00FF00','#0000FF','#8B00FF'];
+const rc=a=>a[Math.floor(Math.random()*a.length)];
+const ri=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const r=(a,b)=>Math.random()*(b-a)+a;
+const scene=document.getElementById('scene');
+const idleEls=[],states=[];
+
+// ============================================================
+//  GAME
+// ============================================================
+function startGame(){
+  buildAnimals();
+  setMode(0);
+  requestAnimationFrame(loop);
+  document.addEventListener('touchstart',()=>{resumeAC();startBG();},{once:true});
+  document.addEventListener('click',()=>{resumeAC();startBG();},{once:true});
+}
+
+function buildAnimals(){
+  const w=window.innerWidth,h=window.innerHeight;
+  SOUND_DEF.forEach(([emoji])=>{
+    const el=document.createElement('div');
+    el.className='idle-obj';el.textContent=emoji;
+    const x=r(30,w-120),y=r(30,h-120);
+    el.style.left=x+'px';el.style.top=y+'px';
+    el.style.setProperty('--wdur',r(0.7,1.4)+'s');
+    el.style.setProperty('--wdel',r(0,1.2)+'s');
+    const ang=r(0,Math.PI*2),spd=r(0.5,1.8);
+    const st={x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,frozen:false};
+    states.push(st);
+
+    function onPress(e){
+      e.stopPropagation();resumeAC();startBG();
+      st.frozen=true;el.classList.add('frozen');
+      el.classList.remove('bounce-pop');void el.offsetWidth;el.classList.add('bounce-pop');
+      playSound(emoji);
+      const rb=el.getBoundingClientRect();
+      doStars(rb.left+rb.width/2,rb.top+rb.height/2,8);
+      doCircles(rb.left+rb.width/2,rb.top+rb.height/2,5);
+      setTimeout(()=>el.classList.remove('bounce-pop'),500);
+    }
+    function onRelease(){
+      if(!st.frozen)return;st.frozen=false;el.classList.remove('frozen');
+      const a=r(0,Math.PI*2),s=r(1.2,2.5);st.vx=Math.cos(a)*s;st.vy=Math.sin(a)*s;
+    }
+    el.addEventListener('touchstart',onPress,{passive:true});
+    el.addEventListener('mousedown',onPress);
+    el.addEventListener('touchend',onRelease,{passive:true});
+    el.addEventListener('touchcancel',onRelease,{passive:true});
+    el.addEventListener('mouseup',onRelease);
+    scene.appendChild(el);idleEls.push(el);
+  });
+}
+
+function moveAnimals(){
+  const w=window.innerWidth,h=window.innerHeight,pad=75;
+  idleEls.forEach((el,i)=>{
+    const s=states[i];if(s.frozen)return;
+    s.x+=s.vx;s.y+=s.vy;
+    if(s.x<0){s.x=0;s.vx=Math.abs(s.vx)+r(-0.2,0.2);}
+    if(s.x>w-pad){s.x=w-pad;s.vx=-Math.abs(s.vx)+r(-0.2,0.2);}
+    if(s.y<0){s.y=0;s.vy=Math.abs(s.vy)+r(-0.2,0.2);}
+    if(s.y>h-pad){s.y=h-pad;s.vy=-Math.abs(s.vy)+r(-0.2,0.2);}
+    if(Math.random()<0.004){const a=r(0,Math.PI*2),sp=r(0.4,1.8);s.vx=Math.cos(a)*sp;s.vy=Math.sin(a)*sp;}
+    const sp=Math.sqrt(s.vx*s.vx+s.vy*s.vy);
+    if(sp<0.3){s.vx*=1.6;s.vy*=1.6;}if(sp>2.8){s.vx*=0.55;s.vy*=0.55;}
+    el.style.left=s.x+'px';el.style.top=s.y+'px';
+  });
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+function doStars(x,y,n=6){
+  const sx=['⭐','✨','🌟','💫','⚡','🎉','💥'];
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div');p.className='star-particle';
+    const ang=(i/n)*Math.PI*2+r(0,0.5),d=ri(50,130);
+    p.style.left=x+'px';p.style.top=y+'px';
+    p.textContent=sx[Math.floor(Math.random()*sx.length)];
+    p.style.setProperty('--dx',Math.cos(ang)*d+'px');
+    p.style.setProperty('--dy',Math.sin(ang)*d+'px');
+    p.style.animationDuration=r(0.7,1.2)+'s';
+    scene.appendChild(p);setTimeout(()=>p.remove(),1400);
+  }
+}
+function doCircles(x,y,n=5){
+  for(let i=0;i<n;i++){
+    const c=document.createElement('div');c.className='circ';
+    const sz=ri(20,60);
+    Object.assign(c.style,{width:sz+'px',height:sz+'px',left:(x-sz/2+r(-40,40))+'px',top:(y-sz/2+r(-40,40))+'px',background:rc(VIVID),opacity:'0.75',transform:'scale(0)',transition:`transform ${r(0.2,0.4)}s cubic-bezier(.36,.07,.19,.97),opacity 0.5s`});
+    scene.appendChild(c);
+    requestAnimationFrame(()=>{c.style.transform='scale(1)';setTimeout(()=>{c.style.opacity='0';setTimeout(()=>c.remove(),600);},400);});
+  }
+}
+function doConfetti(x,y,n=30){
+  for(let i=0;i<n;i++){
+    const c=document.createElement('div');c.className='confetti';
+    c.style.left=(x+r(-80,80))+'px';c.style.top=y+'px';
+    c.style.width=ri(8,18)+'px';c.style.height=ri(8,18)+'px';
+    c.style.background=rc(VIVID);c.style.setProperty('--dur',r(0.8,1.6)+'s');
+    scene.appendChild(c);setTimeout(()=>c.remove(),2000);
+  }
+}
+function doBubbles(x,y,n=10){
+  const cols=['rgba(173,216,230,0.5)','rgba(255,182,193,0.5)','rgba(255,255,200,0.5)','rgba(200,255,200,0.5)'];
+  for(let i=0;i<n;i++){
+    const b=document.createElement('div');b.className='bubble';
+    const sz=ri(20,60);b.style.width=b.style.height=sz+'px';
+    b.style.left=(x+r(-60,60))+'px';b.style.top=y+'px';
+    b.style.setProperty('--bcolor',cols[Math.floor(Math.random()*cols.length)]);
+    b.style.setProperty('--dur',r(1.5,3.5)+'s');b.style.setProperty('--wobble',r(-30,30)+'px');
+    scene.appendChild(b);setTimeout(()=>b.remove(),4000);
+  }
+}
+let lastT=0,tIdx=0;
+function doTrail(x,y){
+  const now=Date.now();if(now-lastT<40)return;lastT=now;
+  const d=document.createElement('div');d.className='trail-dot';
+  const sz=ri(16,36);d.style.width=d.style.height=sz+'px';
+  d.style.left=x+'px';d.style.top=y+'px';
+  d.style.background=RAINBOW[tIdx++%RAINBOW.length];
+  d.style.animationDuration=r(0.5,1)+'s';
+  scene.appendChild(d);setTimeout(()=>d.remove(),1200);
+}
+function doRipple(x,y){
+  for(let i=0;i<3;i++)setTimeout(()=>{
+    const rp=document.createElement('div');rp.className='drum-ripple';
+    rp.style.left=x+'px';rp.style.top=y+'px';
+    rp.style.setProperty('--rcolor',rc(VIVID));rp.style.animationDuration=(0.6+i*0.15)+'s';
+    scene.appendChild(rp);setTimeout(()=>rp.remove(),1000);
+  },i*80);
+}
+function doPaint(x,y){
+  const p=document.createElement('div');p.className='paint-streak';
+  const sz=ri(40,90);p.style.width=p.style.height=sz+'px';
+  p.style.left=x+'px';p.style.top=y+'px';p.style.background=rc(VIVID);
+  scene.appendChild(p);setTimeout(()=>p.remove(),2200);
+}
+
+// ============================================================
+//  MODES
+// ============================================================
+const MODES=['sensory','bubbles','parade','drum','magic'];
+let curMode=0;
+const modeLbl=document.getElementById('mode-label');
+let paradeInt=null;
+
+function spawnParade(){
+  const el=document.createElement('div');el.className='parade-animal';
+  const emoji=ANIMAL_LIST[Math.floor(Math.random()*ANIMAL_LIST.length)];
+  el.textContent=emoji;
+  const spd=r(5,10);
+  el.style.setProperty('--speed',spd+'s');el.style.setProperty('--top',r(10,70)+'vh');
+  const tap=ev=>{ev.stopPropagation();playSound(emoji);const rb=el.getBoundingClientRect();doStars(rb.left+rb.width/2,rb.top+rb.height/2,5);};
+  el.addEventListener('touchstart',tap,{passive:true});el.addEventListener('mousedown',tap);
+  scene.appendChild(el);setTimeout(()=>el.remove(),spd*1000+500);
+}
+
+function setMode(idx){
+  curMode=idx%MODES.length;
+  const names={sensory:'✨ Magic Touch',bubbles:'🫧 Bubble Party',parade:'🐘 Animal Parade',drum:'🥁 Baby Drum',magic:'🎨 Magic Color'};
+  modeLbl.textContent=names[MODES[curMode]];
+  modeLbl.style.opacity='1';setTimeout(()=>modeLbl.style.opacity='0.4',3000);
+  if(paradeInt){clearInterval(paradeInt);paradeInt=null;}
+  if(MODES[curMode]==='parade'){paradeInt=setInterval(spawnParade,2000);spawnParade();}
+}
+
+function onTap(x,y){
+  const m=MODES[curMode];
+  playFX();doStars(x,y,4);
+  if(m==='sensory')doCircles(x,y,5);
+  else if(m==='bubbles')doBubbles(x,y,8);
+  else if(m==='drum'){doRipple(x,y);pXylo(Math.floor(Math.random()*8));}
+  else if(m==='magic')for(let i=0;i<5;i++)setTimeout(()=>doPaint(x+r(-30,30),y+r(-30,30)),i*40);
+}
+
+let mDown=false;
+scene.addEventListener('touchstart',e=>{
+  e.preventDefault();resumeAC();startBG();
+  Array.from(e.changedTouches).forEach(t=>onTap(t.clientX,t.clientY));
+  if(e.touches.length>=3){doConfetti(innerWidth/2,innerHeight/4,50);pGiggle();}
+},{passive:false});
+scene.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  Array.from(e.changedTouches).forEach(t=>{doTrail(t.clientX,t.clientY);if(MODES[curMode]==='magic')doPaint(t.clientX,t.clientY);});
+},{passive:false});
+scene.addEventListener('mousedown',e=>{mDown=true;onTap(e.clientX,e.clientY);resumeAC();startBG();});
+scene.addEventListener('mousemove',e=>{if(!mDown)return;doTrail(e.clientX,e.clientY);if(MODES[curMode]==='magic')doPaint(e.clientX,e.clientY);});
+scene.addEventListener('mouseup',()=>mDown=false);
+
+// ============================================================
+//  SURPRISE
+// ============================================================
+const surpriseTxt=document.getElementById('surprise-text');
+const SURPRISES=['🎉','🌈','⭐','🎊','🦄','🎆','🍭','💥','🤩','🎵'];
+let lastSurp=Date.now(),surpriseDelay=ri(20000,40000);
+function triggerSurprise(){
+  surpriseTxt.textContent=SURPRISES[Math.floor(Math.random()*SURPRISES.length)];
+  surpriseTxt.classList.remove('surprise-pop');void surpriseTxt.offsetWidth;surpriseTxt.classList.add('surprise-pop');
+  doConfetti(innerWidth/2,innerHeight/3,60);pGiggle();
+  setMode(curMode+1);lastSurp=Date.now();surpriseDelay=ri(20000,40000);
+  setTimeout(()=>surpriseTxt.classList.remove('surprise-pop'),1600);
+}
+
+// ============================================================
+//  BACKGROUND + NIGHT
+// ============================================================
+const bgEl=document.getElementById('bg');
+let bgPhase=0;
+const BGC=[['#FFD6E0','#D6F0FF','#FFF9D6'],['#D6FFE0','#FFE0D6','#E0D6FF'],['#E0F0FF','#FFE0F0','#F0FFE0'],['#FFF0B3','#B3F0FF','#FFB3E6']];
+const nightBtn=document.getElementById('night-btn');
+let nightMode=false;
+nightBtn.addEventListener('click',()=>{nightMode=!nightMode;document.body.classList.toggle('night',nightMode);nightBtn.textContent=nightMode?'☀️':'🌙';});
+
+const exitZone=document.getElementById('exit-zone'),exitProg=document.getElementById('exit-progress');
+let exitStart=null,exitInt=null;
+exitZone.addEventListener('touchstart',()=>{exitStart=Date.now();exitProg.style.display='block';exitInt=setInterval(()=>{const p=Math.min((Date.now()-exitStart)/3000*100,100);exitProg.style.background=`conic-gradient(rgba(255,100,100,0.8) ${p*3.6}deg,transparent 0%)`;if(p>=100){clearInterval(exitInt);window.history.back();}},50);},{passive:true});
+exitZone.addEventListener('touchend',()=>{if(exitInt)clearInterval(exitInt);exitProg.style.display='none';exitStart=null;},{passive:true});
+
+// ============================================================
+//  MAIN LOOP
+// ============================================================
+function loop(){
+  if(Date.now()-lastSurp>surpriseDelay)triggerSurprise();
+  bgPhase+=0.0003;
+  const ci=Math.floor(bgPhase)%BGC.length;
+  if(!nightMode){
+    bgEl.style.background=`radial-gradient(ellipse at ${20+Math.sin(bgPhase)*10}% ${30+Math.cos(bgPhase*1.3)*10}%,${BGC[ci][0]} 0%,transparent 50%),radial-gradient(ellipse at ${80+Math.cos(bgPhase)*8}% ${70+Math.sin(bgPhase*0.8)*10}%,${BGC[ci][1]} 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,${BGC[ci][2]} 0%,transparent 70%)`;
+  }else{
+    bgEl.style.background='radial-gradient(ellipse at 20% 30%,#6B3A7D 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,#2D3A6B 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,#3D2B5C 0%,transparent 70%)';
+  }
+  moveAnimals();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize',()=>{
+  const w=innerWidth,h=innerHeight;
+  states.forEach(s=>{s.x=Math.min(s.x,w-80);s.y=Math.min(s.y,h-80);});
+});
+window.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());
+</script>
+</body>
+</html>
